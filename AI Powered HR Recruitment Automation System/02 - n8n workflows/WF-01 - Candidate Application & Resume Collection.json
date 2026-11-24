@@ -1,0 +1,615 @@
+{
+  "name": "WF-01 - Candidate Application & Resume Collection",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Job Application Form",
+        "formDescription": "Complete this form to apply for the position. Please provide accurate information and upload your latest resume.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Full Name",
+              "fieldName": "fullName",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email Address",
+              "fieldType": "email",
+              "fieldName": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Phone Number",
+              "fieldName": "phone",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Position Applying For",
+              "fieldType": "dropdown",
+              "fieldName": "jobID",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "JOB001 - Junior Full Stack Developer"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Highest Qualification",
+              "fieldType": "dropdown",
+              "fieldName": "education",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Diploma"
+                  },
+                  {
+                    "option": "Bachelor's Degree"
+                  },
+                  {
+                    "option": "Master's Degree"
+                  },
+                  {
+                    "option": "PhD"
+                  },
+                  {
+                    "option": "Other"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldType": "html",
+              "html": "<div style=\"padding: 10px; border: 1px solid #d97706; border-radius: 6px; background-color: #fff7ed;\">\n  <strong>Resume Upload Instructions</strong>\n  <p>Please upload your latest resume in PDF (.pdf) format only.</p>\n  <p>DOC and DOCX files are not accepted.</p>\n</div>"
+            },
+            {
+              "fieldLabel": "Upload Resume",
+              "fieldType": "file",
+              "fieldName": "resume",
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Data Processing Consent",
+              "fieldType": "checkbox",
+              "fieldName": "consent",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "I consent to the collection and processing of my application information and resume for recruitment purposes. I understand that my information will be accessible to authorized recruitment personnel and handled according to the organization's privacy policy."
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        32,
+        144
+      ],
+      "id": "752abbb8-10f2-4a5f-97e2-cf943eb594fb",
+      "name": "Form Trigger",
+      "webhookId": "27825342-4180-43e1-8b7f-71165d9983b7"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "=resume",
+        "name": "={{ $binary.resume.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1vRDRaue3pRQwfSFeWsyMQfyqlDerIKpM",
+          "mode": "list",
+          "cachedResultName": "New_Applications",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1vRDRaue3pRQwfSFeWsyMQfyqlDerIKpM"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        880,
+        528
+      ],
+      "id": "5790b8af-972d-4ab0-a9b6-10f211b705a4",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "wR9dnvnP2ntlWCMS",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1152,
+        176
+      ],
+      "id": "ff3da535-0598-47ca-bbf0-f73fbef9e367",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst items = $input.all();\n\nconst consentStatement =\n  \"I consent to the collection and processing of my application information and resume for recruitment purposes. I understand that my information will be accessible to authorized recruitment personnel and handled according to the organization's privacy policy.\";\n\nreturn items.map(item => {\n  const date = new Date()\n    .toISOString()\n    .slice(0, 10)\n    .replace(/-/g, '');\n\n  const uniqueSuffix = Math.random()\n    .toString(16)\n    .slice(2, 8)\n    .toUpperCase();\n\n  const applicationId = `APP-${date}-${uniqueSuffix}`;\n\n  // Use the already normalized Job ID\n  const normalizedJobId = item.json.normalizedJobId;\n\n  // Convert the consent checkbox value into Yes/No\n  const rawConsent = item.json.consent;\n\n  const consentGiven = Array.isArray(rawConsent)\n    ? rawConsent.includes(consentStatement)\n    : rawConsent === true ||\n      rawConsent === 'true' ||\n      rawConsent === 'Yes';\n\n  return {\n    json: {\n      ...item.json,\n      applicationId,\n      jobId: normalizedJobId,\n      consent: consentGiven ? 'Yes' : 'No'\n    },\n    binary: item.binary\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        176
+      ],
+      "id": "045707e3-e05b-4b16-a445-96b2553e4b29",
+      "name": "Generate Application ID"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 729501576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=729501576"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Application ID": "={{ $json.applicationId }}",
+            "Candidate Name": "={{ $json.fullName }}",
+            "Email": "={{ $json.email }}",
+            "Phone": "={{ $json.phone }}",
+            "Resume Link": "={{ $json.webViewLink }}",
+            "Applied Date": "={{ $now.toISO() }}",
+            "Education": "={{ $json.education }}",
+            "Application Status": "Submitted",
+            "Job ID": "={{ $json.jobId }}",
+            "Consent Status": "={{ $json.consent }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Candidate Name",
+              "displayName": "Candidate Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Job ID",
+              "displayName": "Job ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Resume Link",
+              "displayName": "Resume Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Applied Date",
+              "displayName": "Applied Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Parsed Skills",
+              "displayName": "Parsed Skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Education",
+              "displayName": "Education",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Experience",
+              "displayName": "Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Match Score",
+              "displayName": "AI Match Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Matching Explanation",
+              "displayName": "Matching Explanation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Candidate Category",
+              "displayName": "Candidate Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application Status",
+              "displayName": "Application Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "HR Decision",
+              "displayName": "HR Decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Consent Status",
+              "displayName": "Consent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1488,
+        176
+      ],
+      "id": "1a7400bd-3734-4146-9983-e32dc2a1bb91",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  const rawEmail = item.json.email;\n  const rawJobId = item.json.jobID;\n\n  // Normalize email\n  const normalizedEmail =\n    String(rawEmail || '').trim().toLowerCase();\n\n  // Extract the actual Job ID\n  const normalizedJobId =\n    typeof rawJobId === 'string'\n      ? rawJobId.split(' - ')[0].trim()\n      : '';\n\n  return {\n    json: {\n      ...item.json,\n      normalizedEmail,\n      normalizedJobId\n    },\n    binary: item.binary\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        144
+      ],
+      "id": "a2bc378c-a2c6-45ed-a9b7-51e3750a69fb",
+      "name": "Normalize Duplicate Check Fields"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 729501576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=729501576"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email",
+              "lookupValue": "={{ $json.normalizedEmail }}"
+            },
+            {
+              "lookupColumn": "Job ID",
+              "lookupValue": "={{ $json.normalizedJobId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        384,
+        384
+      ],
+      "id": "e2ae1d87-7390-4c44-ba9d-072e6a45f25e",
+      "name": "Check Existing Application",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "10ef9168-8771-4622-afbb-867fcb11b9da",
+              "leftValue": "={{ $json['Application ID'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        720,
+        384
+      ],
+      "id": "1ce56586-6bd5-4758-9e2c-1c03de8078d2",
+      "name": "Is Duplicate Application ?"
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Application Already Received",
+        "completionMessage": "Our records show that you have already submitted an application for this position using this email address. You do not need to submit another application.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        880,
+        240
+      ],
+      "id": "a8df1987-2a6b-42f8-9b9e-21776cccca8e",
+      "name": "Duplicate Application Response",
+      "webhookId": "acfac558-4702-4358-87ad-ce4d2e202b2b"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        528,
+        160
+      ],
+      "id": "e848e687-436c-4536-a516-58a32903dddc",
+      "name": "Restore Original Application Data"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Form Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Duplicate Check Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Generate Application ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Application ID": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Duplicate Check Fields": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Application",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Restore Original Application Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Application": {
+      "main": [
+        [
+          {
+            "node": "Restore Original Application Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Is Duplicate Application ?": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Application Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Application Response": {
+      "main": [
+        []
+      ]
+    },
+    "Restore Original Application Data": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate Application ?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f656920d-d732-4d0e-a6be-520c96a88145",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fb5d1139e51b375c89350ab12a3ea757cd7f2199ff54d5aac2ca542637ba2b0b"
+  },
+  "id": "QGSiU9773fT0Ysl2",
+  "tags": []
+}

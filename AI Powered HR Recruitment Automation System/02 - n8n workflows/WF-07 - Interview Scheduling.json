@@ -1,0 +1,932 @@
+{
+  "name": "WF-07 - Interview Scheduling",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 459631863,
+          "mode": "list",
+          "cachedResultName": "Interviews",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=459631863"
+        },
+        "event": "rowUpdate",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e3191697-b1f6-4255-ae7a-f4c3ff835aae",
+      "name": "Trigger - Interview Sheet Updates",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "6TSjhPANzXQH0rit",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $json;\nconst errors = [];\n\nconst interviewId = String(data[\"Interview ID\"] ?? \"\").trim();\nconst applicationId = String(data[\"Application ID\"] ?? \"\").trim();\nconst candidateName = String(data[\"Candidate Name\"] ?? \"\").trim();\nconst candidateEmail = String(data[\"Candidate Email\"] ?? \"\").trim();\nconst jobTitle = String(data[\"Job Title\"] ?? \"\").trim();\nconst interviewDate = data[\"Interview Date\"] ?? \"\";\nconst interviewTime = data[\"Interview Time\"] ?? \"\";\nconst interviewMode = String(data[\"Interview Mode\"] ?? \"\").trim();\nconst meetingLink = String(data[\"Meeting Link\"] ?? \"\").trim();\nconst interviewStatus = String(data[\"Interview Status\"] ?? \"\").trim();\nconst hrNotes = String(data[\"HR Notes\"] ?? \"\").trim();\n\n// Required fields\nif (!interviewId) errors.push(\"Missing Interview ID.\");\nif (!applicationId) errors.push(\"Missing Application ID.\");\nif (!candidateName) errors.push(\"Missing Candidate Name.\");\nif (!candidateEmail) {\n  errors.push(\"Missing Candidate Email.\");\n} else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(candidateEmail)) {\n  errors.push(\"Invalid Candidate Email format.\");\n}\nif (!jobTitle) errors.push(\"Missing Job Title.\");\nif (!interviewDate) errors.push(\"Missing Interview Date.\");\nif (!interviewTime) errors.push(\"Missing Interview Time.\");\n\n// Interview mode validation\nif (!interviewMode) {\n  errors.push(\"Missing Interview Mode.\");\n} else if (![\"Online\", \"In-person\"].includes(interviewMode)) {\n  errors.push(\"Interview Mode must be Online or In-person.\");\n}\n\n// Online interview requires a meeting link\nif (interviewMode === \"Online\" && !meetingLink) {\n  errors.push(\"Meeting Link is required for Online interviews.\");\n}\n\n// Notification eligibility\nconst eligibleStatus = [\"Scheduled\", \"Rescheduled\"].includes(interviewStatus);\nconst validationPassed = errors.length === 0;\nconst notificationReady = validationPassed && eligibleStatus;\n\nlet notificationType = \"\";\n\nif (interviewStatus === \"Scheduled\") {\n  notificationType = \"Interview Confirmation\";\n} else if (interviewStatus === \"Rescheduled\") {\n  notificationType = \"Interview Rescheduled\";\n}\n\nreturn {\n  json: {\n    ...data,\n    interviewId,\n    applicationId,\n    candidateName,\n    candidateEmail,\n    jobTitle,\n    interviewDate,\n    interviewTime,\n    interviewMode,\n    meetingLink,\n    interviewStatus,\n    hrNotes,\n    validationPassed,\n    notificationReady,\n    notificationType,\n    interviewValidationErrors: errors\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "8657b8af-d2f8-4cb0-afff-95366824946a",
+      "name": "Validate Interview Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "877df81b-40a2-483c-920a-05ec35ef75f7",
+              "leftValue": "={{ $json.validationPassed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "c9b2208a-7224-471e-9f00-9d78003f9639",
+      "name": "Check Interview Validation"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notification ID": "={{ 'INVALID-INT-' + ($json.interviewId || 'UNKNOWN-' + $now.toMillis()) }}",
+            "Application ID": "={{ $json.applicationId || $json[\"Application ID\"] || \"\" }}",
+            "Notification Type": "Interview Validation",
+            "Recipient Email": "={{ $json.candidateEmail || $json[\"Candidate Email\"] || \"\" }}",
+            "Sent Status": "Invalid Data",
+            "Sent At": "={{ $now.toISO() }}",
+            "Workflow Name": "WF-07 - Interview Scheduling",
+            "Error Details": "={{ ($json.interviewValidationErrors || []).join(\"; \") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Notification ID",
+              "displayName": "Notification ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notification Type",
+              "displayName": "Notification Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent Status",
+              "displayName": "Sent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow Name",
+              "displayName": "Workflow Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Details",
+              "displayName": "Error Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        624,
+        96
+      ],
+      "id": "5757d1ca-e1b7-49ba-8ed5-d7c0af5a4015",
+      "name": "Log Invalid Interview Data",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c7c5f1d3-9a12-4530-8271-54dae1c79583",
+              "leftValue": "={{ $json.notificationReady }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        -96
+      ],
+      "id": "77012da4-b579-46ee-9f5e-33ba47d342f7",
+      "name": "Check Interview Notification Eligibility"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 729501576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=729501576"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Application ID",
+              "lookupValue": "={{ $json.applicationId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        848,
+        -112
+      ],
+      "id": "ca23ee78-ab9e-443c-91e0-5d938d2997bd",
+      "name": "Lookup Candidate Application",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1024,
+        -256
+      ],
+      "id": "abdf31a9-13f7-4647-82f4-b317222c37fb",
+      "name": "Merge Interview and Application Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5bd858ad-7fa2-4fd4-a4d5-0f1822f07994",
+              "leftValue": "={{ $json[\"Consent Status\"] }}",
+              "rightValue": "Yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1232,
+        -256
+      ],
+      "id": "87154e4b-e4bf-4f00-88db-0fc1ca1ddda5",
+      "name": "Check Candidate Consent"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $json;\n\nconst interviewId = String(\n  data.interviewId ?? data[\"Interview ID\"] ?? \"UNKNOWN\"\n).trim();\n\nconst status = String(\n  data.interviewStatus ?? data[\"Interview Status\"] ?? \"\"\n).trim();\n\nconst interviewDate = String(\n  data.interviewDate ?? data[\"Interview Date\"] ?? \"\"\n).trim();\n\nconst interviewTime = String(\n  data.interviewTime ?? data[\"Interview Time\"] ?? \"\"\n).trim();\n\nconst clean = (value) =>\n  String(value).replace(/[^a-zA-Z0-9]/g, \"\");\n\nlet notificationId = \"\";\nlet notificationType = \"\";\n\nif (status === \"Scheduled\") {\n  notificationId = `INT-${clean(interviewId)}-CONF`;\n  notificationType = \"Interview Confirmation\";\n} else if (status === \"Rescheduled\") {\n  const fingerprint = `${clean(interviewDate)}-${clean(interviewTime)}`;\n  notificationId = `INT-${clean(interviewId)}-RESCHED-${fingerprint}`;\n  notificationType = \"Interview Rescheduled\";\n}\n\nreturn {\n  json: {\n    ...data,\n    notificationId,\n    notificationType\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        -352
+      ],
+      "id": "2949765e-a548-482a-a30c-8f9e37c4e978",
+      "name": "Generate Interview Notification ID"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Notification ID",
+              "lookupValue": "={{ $json.notificationId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1648,
+        -352
+      ],
+      "id": "e4e36a2c-3286-49e0-8e31-96a2509c7c7c",
+      "name": "Lookup Existing Interview Notification",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1808,
+        -512
+      ],
+      "id": "3e7f88dd-3ffa-481d-97c7-c706db4ba405",
+      "name": "Merge Interview and Log Lookup"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f02be215-62ea-4a41-9758-a311df11ab0b",
+              "leftValue": "={{ $json[\"Sent Status\"] }}",
+              "rightValue": "Sent",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2000,
+        -512
+      ],
+      "id": "f24eb74c-a882-4753-9181-b193a930dd8f",
+      "name": "Check Duplicate Interview Notification"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f16dfa1c-8b23-4bf7-8ab7-6aa9f06965d3",
+              "name": "emailSubject",
+              "value": "={{ $json.notificationType === \"Interview Rescheduled\" ? \"Interview Rescheduled – \" + $json.jobTitle : \"Interview Invitation – \" + $json.jobTitle }}",
+              "type": "string"
+            },
+            {
+              "id": "ec66eb75-cee6-4726-b6d9-a91fc8c30c56",
+              "name": "emailBody",
+              "value": "={{  \"Dear \" + $json.candidateName + \",\\n\\n\" + ($json.notificationType === \"Interview Rescheduled\" ? \"Your interview has been rescheduled. Please find the updated details below:\" : \"Congratulations! You are invited to an interview. Please find the details below:\") + \"\\n\\nJob Title: \" + $json.jobTitle + \"\\nInterview Date: \" + $json.interviewDate + \"\\nInterview Time: \" + $json.interviewTime + \"\\nInterview Mode: \" + $json.interviewMode + ($json.interviewMode === \"Online\" ? \"\\nMeeting Link: \" + $json.meetingLink : ($json.hrNotes ? \"\\nLocation / Additional Information: \" + $json.hrNotes : \"\")) + \"\\n\\nPlease be prepared and join / arrive on time.\" + \"\\n\\nIf you have any questions, please reply to this email.\" + \"\\n\\nBest regards,\\nHR Recruitment Team\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2208,
+        -416
+      ],
+      "id": "4be27b17-e8dc-47bb-9dcf-7582a4a7bee9",
+      "name": "Prepare Interview Email"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.candidateEmail }}",
+        "subject": "={{ $json.emailSubject }}",
+        "emailType": "text",
+        "message": "={{ $json.emailBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2416,
+        -416
+      ],
+      "id": "268087c8-1d00-4b33-9cdb-7eeb5a758b98",
+      "name": "Send Interview Email",
+      "webhookId": "bee5110f-bcc0-4f5f-b0f6-237d4a4e149a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3TQltJyAQvWgHy7j",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notification ID": "={{ $('Prepare Interview Email').item.json.notificationId }}",
+            "Application ID": "={{ $('Prepare Interview Email').item.json.applicationId }}",
+            "Notification Type": "={{ $('Prepare Interview Email').item.json.notificationType }}",
+            "Recipient Email": "={{ $('Prepare Interview Email').item.json.candidateEmail }}",
+            "Sent Status": "Sent",
+            "Sent At": "={{ $now.toISO() }}",
+            "Workflow Name": "WF-07 - Interview Scheduling"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Notification ID",
+              "displayName": "Notification ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notification Type",
+              "displayName": "Notification Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent Status",
+              "displayName": "Sent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow Name",
+              "displayName": "Workflow Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Details",
+              "displayName": "Error Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2624,
+        -512
+      ],
+      "id": "542d55ed-5268-4037-b193-a0570eb9203c",
+      "name": "Log Interview Email Success",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notification ID": "={{ $('Prepare Interview Email').item.json.notificationId }}",
+            "Application ID": "={{ $('Prepare Interview Email').item.json.applicationId }}",
+            "Notification Type": "={{ $('Prepare Interview Email').item.json.notificationType }}",
+            "Recipient Email": "={{ $('Prepare Interview Email').item.json.candidateEmail }}",
+            "Sent Status": "Failed",
+            "Sent At": "={{ $now.toISO() }}",
+            "Workflow Name": "WF-07 - Interview Scheduling",
+            "Error Details": "={{ $json.error?.message || $json.message || $json.description || JSON.stringify($json) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Notification ID",
+              "displayName": "Notification ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notification Type",
+              "displayName": "Notification Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent Status",
+              "displayName": "Sent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow Name",
+              "displayName": "Workflow Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Details",
+              "displayName": "Error Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2624,
+        -320
+      ],
+      "id": "b9d2cb01-340e-476e-913e-e8502688911b",
+      "name": "Log Interview Email Failure",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Trigger - Interview Sheet Updates": {
+      "main": [
+        [
+          {
+            "node": "Validate Interview Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Interview Data": {
+      "main": [
+        [
+          {
+            "node": "Check Interview Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Interview Validation": {
+      "main": [
+        [
+          {
+            "node": "Check Interview Notification Eligibility",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Invalid Interview Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Interview Notification Eligibility": {
+      "main": [
+        [
+          {
+            "node": "Lookup Candidate Application",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Interview and Application Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Candidate Application": {
+      "main": [
+        [
+          {
+            "node": "Merge Interview and Application Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Interview and Application Data": {
+      "main": [
+        [
+          {
+            "node": "Check Candidate Consent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Candidate Consent": {
+      "main": [
+        [
+          {
+            "node": "Generate Interview Notification ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Interview Notification ID": {
+      "main": [
+        [
+          {
+            "node": "Merge Interview and Log Lookup",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lookup Existing Interview Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Interview and Log Lookup": {
+      "main": [
+        [
+          {
+            "node": "Check Duplicate Interview Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Existing Interview Notification": {
+      "main": [
+        [
+          {
+            "node": "Merge Interview and Log Lookup",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Check Duplicate Interview Notification": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Prepare Interview Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Interview Email": {
+      "main": [
+        [
+          {
+            "node": "Send Interview Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Interview Email": {
+      "main": [
+        [
+          {
+            "node": "Log Interview Email Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Interview Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "545a6e7c-8f4b-4c3e-b0ab-57873d61f4d9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fb5d1139e51b375c89350ab12a3ea757cd7f2199ff54d5aac2ca542637ba2b0b"
+  },
+  "id": "of7aWL764jSwPRw8",
+  "tags": []
+}

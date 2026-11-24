@@ -1,0 +1,2102 @@
+{
+  "name": "WF-06 - Candidate Email Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 729501576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=729501576"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "552d8001-7523-4d43-8b42-926ed5d0bf58",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "6TSjhPANzXQH0rit",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $json;\n\nconst errors = [];\n\nconst applicationId = String(data[\"Application ID\"] ?? \"\").trim();\nconst candidateName = String(data[\"Candidate Name\"] ?? \"\").trim();\nconst email = String(data[\"Email\"] ?? \"\").trim();\nconst consent = String(data[\"Consent Status\"] ?? \"\").trim();\n\nif (!applicationId) {\n  errors.push(\"Missing Application ID.\");\n}\n\nif (!candidateName) {\n  errors.push(\"Missing Candidate Name.\");\n}\n\nif (!email) {\n  errors.push(\"Missing candidate email address.\");\n} else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {\n  errors.push(\"Invalid email address format.\");\n}\n\nif (consent.toLowerCase() !== \"yes\") {\n  errors.push(\"Candidate consent is missing or not confirmed.\");\n}\n\nconst notificationReady = errors.length === 0;\n\nreturn {\n  json: {\n    ...data,\n    applicationId,\n    candidateName,\n    candidateEmail: email,\n    notificationReady,\n    notificationValidationErrors: errors\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "4044f914-4200-45b2-901e-b3e87d6a5eb9",
+      "name": "Validate Candidate Notification Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "aa972d5b-349d-46e2-908b-219d655938a9",
+              "leftValue": "={{ $json.notificationReady }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "5c3de4a6-404d-4fef-b46c-12b1be12f9b8",
+      "name": "Check Notification Eligibility"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.candidateEmail }}",
+        "subject": "Application Received – Confirmation",
+        "message": "=Dear {{ $json.candidateName }},  Thank you for applying to join our organization.  We have successfully received your application and resume. Your application is now recorded in our recruitment system and will be reviewed by our recruitment team.  We appreciate your interest in the opportunity. If your profile matches our current requirements, our team will contact you regarding the next steps.  Thank you for your time and interest.  Best regards, Recruitment Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        -64
+      ],
+      "id": "7fdb2f56-8b3d-4893-b51f-e9cca942079d",
+      "name": "Send Application Acknowledgement",
+      "webhookId": "f1e8fca6-8f88-4061-bcd7-2e5147319c15",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3TQltJyAQvWgHy7j",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Application ID",
+              "lookupValue": "={{ $json.applicationId }}"
+            },
+            {
+              "lookupColumn": "Notification Type",
+              "lookupValue": "Application Acknowledgement"
+            },
+            {
+              "lookupColumn": "Sent Status",
+              "lookupValue": "Sent"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        672,
+        -16
+      ],
+      "id": "9c556fdc-6ef3-449e-9bfc-dc60ddb88ebe",
+      "name": "Check Existing Acknowledgement",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0a5d9329-f640-4f0e-b3a9-105b27e1c4e7",
+              "leftValue": "={{ $json[\"Notification ID\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        -192
+      ],
+      "id": "655abd47-21c3-408e-a5b4-701fb18dc977",
+      "name": "Acknowledgement Already Sent?"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        848,
+        -192
+      ],
+      "id": "fb60fe33-1bd4-4835-92f9-0ad092b7b5fd",
+      "name": "Merge Candidate and Log Data"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notification ID": "={{ 'ACK-' + $node[\"Merge Candidate and Log Data\"].json.applicationId }}",
+            "Application ID": "={{ $node[\"Merge Candidate and Log Data\"].json.applicationId }}",
+            "Notification Type": "Application Acknowledgement",
+            "Recipient Email": "={{ $node[\"Merge Candidate and Log Data\"].json.candidateEmail }}",
+            "Sent Status": "Sent",
+            "Sent At": "={{ $now.toISO() }}",
+            "Workflow Name": "WF-06 - Candidate Email Notifications"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Notification ID",
+              "displayName": "Notification ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notification Type",
+              "displayName": "Notification Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent Status",
+              "displayName": "Sent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow Name",
+              "displayName": "Workflow Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Details",
+              "displayName": "Error Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1456,
+        -160
+      ],
+      "id": "0953ed50-c9f3-4e39-ac76-a3936b4a14c3",
+      "name": "Log Acknowledgement Sent",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notification ID": "={{ 'ACK-' + $node[\"Merge Candidate and Log Data\"].json.applicationId }}",
+            "Application ID": "={{ $node[\"Merge Candidate and Log Data\"].json.applicationId }}",
+            "Notification Type": "Application Acknowledgement",
+            "Recipient Email": "={{ $node[\"Merge Candidate and Log Data\"].json.candidateEmail }}",
+            "Sent Status": "Failed",
+            "Sent At": "={{ $now.toISO() }}",
+            "Workflow Name": "WF-06 - Candidate Email Notifications",
+            "Error Details": "={{ $json.error?.message || $json.message || \"Gmail send failed; error message unavailable\" }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Notification ID",
+              "displayName": "Notification ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notification Type",
+              "displayName": "Notification Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent Status",
+              "displayName": "Sent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow Name",
+              "displayName": "Workflow Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Details",
+              "displayName": "Error Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1456,
+        32
+      ],
+      "id": "fa33ffeb-3828-46c7-aab0-dd22f10ffafd",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notification ID": "={{ 'INVALID-' + ($json.applicationId || 'UNKNOWN-' + $now.toMillis()) }}",
+            "Application ID": "={{ $json.applicationId || $json[\"Application ID\"] || \"\" }}",
+            "Notification Type": "Application Acknowledgement",
+            "Recipient Email": "={{ $json.candidateEmail || $json.Email || \"\" }}",
+            "Sent Status": "Invalid Data",
+            "Sent At": "={{ $now.toISO() }}",
+            "Workflow Name": "WF-06 - Candidate Email Notifications",
+            "Error Details": "={{ ($json.notificationValidationErrors || []).join(\"; \") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Notification ID",
+              "displayName": "Notification ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notification Type",
+              "displayName": "Notification Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent Status",
+              "displayName": "Sent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow Name",
+              "displayName": "Workflow Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Details",
+              "displayName": "Error Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        672,
+        192
+      ],
+      "id": "79cc285b-209e-47d7-a185-b72a5888c620",
+      "name": "Log Invalid Acknowledgement Data",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 729501576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=729501576"
+        },
+        "event": "rowUpdate",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        752
+      ],
+      "id": "41cb32c5-fe9c-4289-a703-5c77a7972f46",
+      "name": "Trigger - HR Status Updates",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "6TSjhPANzXQH0rit",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d2c77da1-2678-40b8-a237-301978f765a8",
+              "leftValue": "={{ $json[\"Application Status\"] }}",
+              "rightValue": "Shortlisted",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        576
+      ],
+      "id": "c7a6d8fa-c85d-4c03-9ed2-f81fb7718304",
+      "name": "IF - Shortlisting Decision Check"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $json;\nconst errors = [];\n\nconst applicationId = String(data[\"Application ID\"] ?? \"\").trim();\nconst candidateName = String(data[\"Candidate Name\"] ?? \"\").trim();\nconst email = String(data[\"Email\"] ?? \"\").trim();\nconst consent = String(data[\"Consent Status\"] ?? \"\").trim();\nconst applicationStatus = String(data[\"Application Status\"] ?? \"\").trim();\n\nif (!applicationId) {\n  errors.push(\"Missing Application ID.\");\n}\n\nif (!candidateName) {\n  errors.push(\"Missing Candidate Name.\");\n}\n\nif (!email) {\n  errors.push(\"Missing candidate email.\");\n} else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {\n  errors.push(\"Invalid email format.\");\n}\n\nif (consent.toLowerCase() !== \"yes\") {\n  errors.push(\"Consent is missing or not confirmed.\");\n}\n\nif (applicationStatus !== \"Shortlisted\") {\n  errors.push(\"Candidate is not marked as Shortlisted.\");\n}\n\nreturn {\n  json: {\n    ...data,\n    applicationId,\n    candidateName,\n    candidateEmail: email,\n    applicationStatus,\n    shortlistingNotificationReady: errors.length === 0,\n    shortlistingValidationErrors: errors\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        560
+      ],
+      "id": "ba44a413-fa52-417e-a8f4-f2fb3dc28273",
+      "name": "Validate Shortlisting Notification Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6e224a19-b715-4f43-b085-70a6f42d4939",
+              "leftValue": "={{ $json.shortlistingNotificationReady }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        560
+      ],
+      "id": "c2e33d67-ff9c-4100-b599-5aa4f823292e",
+      "name": "IF - Shortlisting Validation Passed"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Application ID",
+              "lookupValue": "={{ $json.applicationId }}"
+            },
+            {
+              "lookupColumn": "Notification Type",
+              "lookupValue": "Shortlisting Notification"
+            },
+            {
+              "lookupColumn": "Sent Status",
+              "lookupValue": "Sent"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        544
+      ],
+      "id": "2cf2677f-3602-41b9-8a28-0c91189b09e1",
+      "name": "Check Existing Shortlisting Notification",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1072,
+        384
+      ],
+      "id": "f4013f64-5d3e-4ac6-8fba-d60aa54c8543",
+      "name": "Merge Candidate and Shortlisting Log"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1a68b230-1dc3-49b1-8045-5b38700f4ba4",
+              "leftValue": "={{ $json[\"Notification ID\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1280,
+        544
+      ],
+      "id": "039f8ab3-261a-44f6-ac3e-0ae2eb05cf75",
+      "name": "IF - Shortlisting Notification Already Sent?"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.candidateEmail }}",
+        "subject": "Application Update – Shortlisted",
+        "message": "=Dear {{ $json.candidateName }},  We are pleased to inform you that your application has been shortlisted for further consideration.  Our recruitment team has reviewed your application and would like to proceed with the next stage of the recruitment process. Further details regarding the interview or next steps will be shared with you separately.  Please keep an eye on your email for upcoming updates.  Congratulations, and thank you for your interest in joining our organization.  Best regards,   Recruitment Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1488,
+        640
+      ],
+      "id": "534bca40-7974-4d34-89c7-2ae4f73714b2",
+      "name": "Send Shortlisting Notification",
+      "webhookId": "d39af52a-da7a-4d45-bc1a-df2eda659395",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3TQltJyAQvWgHy7j",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notification ID": "={{ 'SHORT-' + $node[\"Merge Candidate and Shortlisting Log\"].json.applicationId }}",
+            "Application ID": "={{ $node[\"Merge Candidate and Shortlisting Log\"].json.applicationId }}",
+            "Notification Type": "Shortlisting Notification",
+            "Recipient Email": "={{ $node[\"Merge Candidate and Shortlisting Log\"].json.candidateEmail }}",
+            "Sent Status": "Sent",
+            "Sent At": "={{ $now.toISO() }}",
+            "Workflow Name": "WF-06 - Candidate Email Notifications"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Notification ID",
+              "displayName": "Notification ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notification Type",
+              "displayName": "Notification Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent Status",
+              "displayName": "Sent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow Name",
+              "displayName": "Workflow Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Details",
+              "displayName": "Error Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1696,
+        544
+      ],
+      "id": "edaf723c-eab2-4338-8603-3546dc59fade",
+      "name": "Log Shortlisting Notification Sent",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notification ID": "={{ 'SHORT-' + $node[\"Merge Candidate and Shortlisting Log\"].json.applicationId }}",
+            "Application ID": "={{ $node[\"Merge Candidate and Shortlisting Log\"].json.applicationId }}",
+            "Notification Type": "Shortlisting Notification",
+            "Recipient Email": "={{ $node[\"Merge Candidate and Shortlisting Log\"].json.candidateEmail }}",
+            "Sent Status": "Failed",
+            "Sent At": "={{ $now.toISO() }}",
+            "Workflow Name": "WF-06 - Candidate Email Notifications",
+            "Error Details": "={{ $json.error?.message || $json.message || \"Gmail send failed; error message unavailable\" }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Notification ID",
+              "displayName": "Notification ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notification Type",
+              "displayName": "Notification Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent Status",
+              "displayName": "Sent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow Name",
+              "displayName": "Workflow Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Details",
+              "displayName": "Error Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1696,
+        736
+      ],
+      "id": "09c16778-ecf2-42ac-9ed7-c18241d15d2e",
+      "name": "Log Shortlisting Notification Failed",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notification ID": "={{ 'INVALID-SHORT-' + ($json.applicationId || 'UNKNOWN-' + $now.toMillis()) }}",
+            "Application ID": "={{ $json.applicationId || $json[\"Application ID\"] || \"\" }}",
+            "Notification Type": "Shortlisting Notification",
+            "Recipient Email": "={{ $json.candidateEmail || $json.Email || \"\" }}",
+            "Sent Status": "Invalid Data",
+            "Sent At": "={{ $now.toISO() }}",
+            "Workflow Name": "WF-06 - Candidate Email Notifications",
+            "Error Details": "={{ ($json.shortlistingValidationErrors || []).join(\"; \") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Notification ID",
+              "displayName": "Notification ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notification Type",
+              "displayName": "Notification Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent Status",
+              "displayName": "Sent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow Name",
+              "displayName": "Workflow Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Details",
+              "displayName": "Error Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        720
+      ],
+      "id": "3a209365-71d0-41cd-a3dc-a2ba5264781f",
+      "name": "Append row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "846d79c4-f6b0-4f13-8b02-ae32828b3423",
+              "leftValue": "={{ $json[\"Application Status\"] }}",
+              "rightValue": "Rejected",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        944
+      ],
+      "id": "4b0a77a0-bbc7-47e6-9c37-908cc9ef774a",
+      "name": "IF - Rejection Decision Check"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\nconst errors = [];\n\nconst applicationId = String(data[\"Application ID\"] ?? \"\").trim();\nconst candidateName = String(data[\"Candidate Name\"] ?? \"\").trim();\nconst email = String(data[\"Email\"] ?? \"\").trim();\nconst consent = String(data[\"Consent Status\"] ?? \"\").trim();\nconst applicationStatus = String(data[\"Application Status\"] ?? \"\").trim();\n\nif (!applicationId) {\n  errors.push(\"Missing Application ID.\");\n}\n\nif (!candidateName) {\n  errors.push(\"Missing Candidate Name.\");\n}\n\nif (!email) {\n  errors.push(\"Missing candidate email.\");\n} else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {\n  errors.push(\"Invalid email format.\");\n}\n\nif (consent.toLowerCase() !== \"yes\") {\n  errors.push(\"Consent is missing or not confirmed.\");\n}\n\nif (applicationStatus !== \"Rejected\") {\n  errors.push(\"Application is not marked as Rejected.\");\n}\n\nreturn {\n  json: {\n    ...data,\n    applicationId,\n    candidateName,\n    candidateEmail: email,\n    applicationStatus,\n    rejectionNotificationReady: errors.length === 0,\n    rejectionValidationErrors: errors\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        928
+      ],
+      "id": "e2406a62-ce3a-4b59-bf20-dadfa92108c1",
+      "name": "Validate Rejection Notification Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8837c22f-b27e-4b88-b961-a2ed26f29d52",
+              "leftValue": "={{ $json.rejectionNotificationReady }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        928
+      ],
+      "id": "3f572d3a-7eaf-4ff1-81fd-e0dfe61cd718",
+      "name": "IF - Rejection Validation Passed"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Application ID",
+              "lookupValue": "={{ $json.applicationId }}"
+            },
+            {
+              "lookupColumn": "Notification Type",
+              "lookupValue": "Rejection Notification"
+            },
+            {
+              "lookupColumn": "Sent Status",
+              "lookupValue": "Sent"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        976
+      ],
+      "id": "ee0ecbe8-bd24-44d2-9579-cb42c66df2a9",
+      "name": "Check Existing Rejection Notification",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1072,
+        928
+      ],
+      "id": "98397923-bf43-4e0a-af1c-9ffda0b6b75c",
+      "name": "Merge Candidate and Rejection Log"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fc66be2f-91d0-43ed-bbc0-2d6e46bc5112",
+              "leftValue": "={{ $json[\"Notification ID\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1280,
+        928
+      ],
+      "id": "26b15492-6f95-44ad-9164-5aca8e05bf9c",
+      "name": "IF - Rejection Notification Already Sent?"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.candidateEmail }}",
+        "subject": "Application Update – Recruitment Decision",
+        "message": "=Dear {{ $json.candidateName }},  Thank you for your interest in joining our organization and for the time and effort you invested in your application.  After careful consideration by our recruitment team, we regret to inform you that we will not be moving forward with your application for this position at this time.  We appreciate your interest and wish you the best in your future career endeavors.  Best regards,   Recruitment Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1488,
+        1024
+      ],
+      "id": "e8e18ccc-d7f4-4aaa-a290-ea6f59632179",
+      "name": "Send Rejection Notification",
+      "webhookId": "6edaa842-76b5-4807-b77d-0a3a1ab25a0b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3TQltJyAQvWgHy7j",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notification ID": "={{ 'REJ-' + $node[\"Merge Candidate and Rejection Log\"].json.applicationId }}",
+            "Application ID": "={{ $node[\"Merge Candidate and Rejection Log\"].json.applicationId }}",
+            "Notification Type": "Rejection Notification",
+            "Recipient Email": "={{ $node[\"Merge Candidate and Rejection Log\"].json.candidateEmail }}",
+            "Sent Status": "Sent",
+            "Sent At": "={{ $now.toISO() }}",
+            "Workflow Name": "WF-06 - Candidate Email Notifications"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Notification ID",
+              "displayName": "Notification ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notification Type",
+              "displayName": "Notification Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent Status",
+              "displayName": "Sent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow Name",
+              "displayName": "Workflow Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Details",
+              "displayName": "Error Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1696,
+        928
+      ],
+      "id": "33fa3d5f-458b-4344-9397-f200953b9525",
+      "name": "Log Rejection Notification Sent",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notification ID": "={{ 'REJ-' + $node[\"Merge Candidate and Rejection Log\"].json.applicationId }}",
+            "Application ID": "={{ $node[\"Merge Candidate and Rejection Log\"].json.applicationId }}",
+            "Notification Type": "Rejection Notification",
+            "Recipient Email": "={{ $node[\"Merge Candidate and Rejection Log\"].json.candidateEmail }}",
+            "Sent At": "={{ $now.toISO() }}",
+            "Workflow Name": "WF-06 - Candidate Email Notifications",
+            "Error Details": "={{ $json.error?.message || $json.message || \"Gmail send failed; error message unavailable\" }}",
+            "Sent Status": "Failed"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Notification ID",
+              "displayName": "Notification ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notification Type",
+              "displayName": "Notification Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent Status",
+              "displayName": "Sent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow Name",
+              "displayName": "Workflow Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Details",
+              "displayName": "Error Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1696,
+        1120
+      ],
+      "id": "6142ec49-c98a-4cef-9689-61bea9adc0b3",
+      "name": "Log Rejection Notification Failed",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Notification Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=1001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notification ID": "={{ 'INVALID-REJ-' + ($json.applicationId || 'UNKNOWN-' + $now.toMillis()) }}",
+            "Application ID": "={{ $json.applicationId || $json[\"Application ID\"] || \"\" }}",
+            "Notification Type": "Rejection Notification",
+            "Recipient Email": "={{ $json.candidateEmail || $json.Email || \"\" }}",
+            "Sent Status": "Invalid Data",
+            "Sent At": "={{ $now.toISO() }}",
+            "Workflow Name": "WF-06 - Candidate Email Notifications",
+            "Error Details": "={{ ($json.rejectionValidationErrors || []).join(\"; \") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Notification ID",
+              "displayName": "Notification ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notification Type",
+              "displayName": "Notification Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent Status",
+              "displayName": "Sent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow Name",
+              "displayName": "Workflow Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Details",
+              "displayName": "Error Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        1152
+      ],
+      "id": "a3e43ecf-c645-4b93-875f-ed36ea09ff5e",
+      "name": "Log Invalid Rejection Data",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Candidate Notification Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Candidate Notification Data": {
+      "main": [
+        [
+          {
+            "node": "Check Notification Eligibility",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Notification Eligibility": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Acknowledgement",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Candidate and Log Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Invalid Acknowledgement Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Acknowledgement": {
+      "main": [
+        [
+          {
+            "node": "Merge Candidate and Log Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Acknowledgement Already Sent?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send Application Acknowledgement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Candidate and Log Data": {
+      "main": [
+        [
+          {
+            "node": "Acknowledgement Already Sent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Application Acknowledgement": {
+      "main": [
+        [
+          {
+            "node": "Log Acknowledgement Sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger - HR Status Updates": {
+      "main": [
+        [
+          {
+            "node": "IF - Shortlisting Decision Check",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF - Rejection Decision Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Shortlisting Decision Check": {
+      "main": [
+        [
+          {
+            "node": "Validate Shortlisting Notification Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Shortlisting Notification Data": {
+      "main": [
+        [
+          {
+            "node": "IF - Shortlisting Validation Passed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Shortlisting Validation Passed": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Shortlisting Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Candidate and Shortlisting Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Shortlisting Notification": {
+      "main": [
+        [
+          {
+            "node": "Merge Candidate and Shortlisting Log",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Candidate and Shortlisting Log": {
+      "main": [
+        [
+          {
+            "node": "IF - Shortlisting Notification Already Sent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Shortlisting Notification Already Sent?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send Shortlisting Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Shortlisting Notification": {
+      "main": [
+        [
+          {
+            "node": "Log Shortlisting Notification Sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Shortlisting Notification Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Rejection Decision Check": {
+      "main": [
+        [
+          {
+            "node": "Validate Rejection Notification Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Rejection Notification Data": {
+      "main": [
+        [
+          {
+            "node": "IF - Rejection Validation Passed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Rejection Validation Passed": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Rejection Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Candidate and Rejection Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Invalid Rejection Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Rejection Notification": {
+      "main": [
+        [
+          {
+            "node": "Merge Candidate and Rejection Log",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Candidate and Rejection Log": {
+      "main": [
+        [
+          {
+            "node": "IF - Rejection Notification Already Sent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Rejection Notification Already Sent?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send Rejection Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Rejection Notification": {
+      "main": [
+        [
+          {
+            "node": "Log Rejection Notification Sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Rejection Notification Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "292e8656-f7c1-4f92-9781-73fa72616e9d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fb5d1139e51b375c89350ab12a3ea757cd7f2199ff54d5aac2ca542637ba2b0b"
+  },
+  "id": "1PweIqBQKucTwxah",
+  "tags": []
+}

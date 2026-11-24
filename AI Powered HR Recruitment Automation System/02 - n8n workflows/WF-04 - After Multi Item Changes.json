@@ -1,0 +1,801 @@
+{
+  "name": "WF-04 - AI Candidate Matching",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 729501576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=729501576"
+        },
+        "event": "rowUpdate",
+        "options": {
+          "columnsToWatch": [
+            "Parsed Skills",
+            "Education",
+            "Experience"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        16
+      ],
+      "id": "43ee8ac1-341c-435f-81f6-5996cb1d5973",
+      "name": "Trigger — New Candidate Application",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "6TSjhPANzXQH0rit",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 729501576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=729501576"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Application ID",
+              "lookupValue": "={{ $json['Application ID'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        432,
+        16
+      ],
+      "id": "78c6e196-5594-4afb-a742-5757fc6af196",
+      "name": "Get Candidate Application",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Jobs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Job ID",
+              "lookupValue": "={{ $json[\"Job ID\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        656,
+        16
+      ],
+      "id": "ca21e4f2-c3d4-4c0a-9d17-422486c91f57",
+      "name": "Get Job Requirements",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nlet candidate = {};\nlet candidateLookupError = '';\n\ntry {\n  candidate = $('Get Candidate Application').item.json ?? {};\n} catch (error) {\n  candidateLookupError =\n    `Candidate lookup could not be linked: ${error.message}`;\n}\n\nconst job = $json ?? {};\n\nconst isBlank = (value) =>\n  value === undefined ||\n  value === null ||\n  String(value).trim() === '';\n\nconst errors = [];\n\nif (candidateLookupError) {\n  errors.push(candidateLookupError);\n}\n\nconst candidateRequiredFields = [\n  'Application ID',\n  'Job ID'\n];\n\nfor (const field of candidateRequiredFields) {\n  if (isBlank(candidate[field])) {\n    errors.push(`Candidate field is missing: ${field}`);\n  }\n}\n\nconst jobRequiredFields = [\n  'Job ID',\n  'Required Skills',\n  'Experience Required',\n  'Education Required',\n  'Job Description'\n];\n\nfor (const field of jobRequiredFields) {\n  if (isBlank(job[field])) {\n    errors.push(`Job field is missing: ${field}`);\n  }\n}\n\nconst candidateJobId = String(candidate['Job ID'] ?? '').trim();\nconst jobJobId = String(job['Job ID'] ?? '').trim();\n\nif (\n  candidateJobId &&\n  jobJobId &&\n  candidateJobId.toUpperCase() !== jobJobId.toUpperCase()\n) {\n  errors.push('Candidate Job ID does not match the retrieved job.');\n}\n\nconst jobStatus = String(job['Job Status'] ?? '')\n  .trim()\n  .toLowerCase();\n\nif (jobStatus !== 'open') {\n  errors.push('Job is not Open. Matching must not proceed.');\n}\n\nconst missingProfileFields = [\n  'Parsed Skills',\n  'Education',\n  'Experience'\n].filter(field => isBlank(candidate[field]));\n\nreturn {\n  json: {\n    validationPassed: errors.length === 0,\n    validationErrors: errors,\n    candidateProfileSufficient: missingProfileFields.length === 0,\n    missingProfileFields,\n    candidate,\n    job\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        16
+      ],
+      "id": "a961b158-75f2-4128-9bda-77ced32092c7",
+      "name": "Validate Matching Data"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst data = $json;\n\nconst candidate = data.candidate ?? {};\nconst job = data.job ?? {};\n\nconst candidateApplicationId =\n  candidate['Application ID'] ?? '';\n\nconst readyForAI =\n  data.validationPassed === true &&\n  data.candidateProfileSufficient === true;\n\nreturn {\n  json: {\n    readyForAI,\n    candidateApplicationId,\n    validationErrors: data.validationErrors ?? [],\n    missingProfileFields: data.missingProfileFields ?? [],\n\n    matchingInput: {\n      candidate: {\n        skills: candidate['Parsed Skills'] ?? '',\n        education: candidate['Education'] ?? '',\n        experience: candidate['Experience'] ?? ''\n      },\n      job: {\n        requiredSkills: job['Required Skills'] ?? '',\n        preferredSkills: job['Preferred Skills'] ?? '',\n        experienceRequired: job['Experience Required'] ?? '',\n        educationRequired: job['Education Required'] ?? '',\n        description: job['Job Description'] ?? ''\n      }\n    }\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        16
+      ],
+      "id": "888ab1d4-665b-4973-bbcf-caa089022f5e",
+      "name": "Prepare Matching Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d1657675-3c9f-41bb-bae2-573600b3d171",
+              "leftValue": "={{ $json.readyForAI }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1312,
+        16
+      ],
+      "id": "3fd58479-c63b-4dac-bac4-88db9c3404f9",
+      "name": "Check AI Matching Eligibility"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst data = $json;\n\nconst reasons = [];\n\nif (Array.isArray(data.validationErrors)) {\n  reasons.push(...data.validationErrors);\n}\n\nif (\n  Array.isArray(data.missingProfileFields) &&\n  data.missingProfileFields.length > 0\n) {\n  reasons.push(\n    'Missing candidate profile information: ' +\n    data.missingProfileFields.join(', ')\n  );\n}\n\nif (Array.isArray(data.parserErrors) && data.parserErrors.length > 0) {\n  reasons.push(\n    'AI response validation issues: ' +\n    data.parserErrors.join('; ')\n  );\n}\n\nif (Array.isArray(data.scoreErrors) && data.scoreErrors.length > 0) {\n  reasons.push(\n    'Score calculation issues: ' +\n    data.scoreErrors.join('; ')\n  );\n}\n\nif (data.evidenceRequiresManualReview === true) {\n  reasons.push(\n    'AI evaluation found insufficient evidence for reliable scoring.'\n  );\n}\n\nif (\n  Array.isArray(data.evaluation?.uncertainties) &&\n  data.evaluation.uncertainties.length > 0\n) {\n  reasons.push(\n    'Uncertainties: ' +\n    data.evaluation.uncertainties.join('; ')\n  );\n}\n\nif (reasons.length === 0) {\n  reasons.push(\n    'The application requires manual verification before proceeding.'\n  );\n}\n\nconst explanation = [\n  'MANUAL REVIEW REQUIRED',\n  'A reliable AI match score was not produced.',\n  ...reasons,\n  'HR action: Verify the application and job information before proceeding.'\n].join('\\n');\n\nreturn {\n  json: {\n    candidateApplicationId: data.candidateApplicationId ?? '',\n    aiMatchScore: '',\n    matchingExplanation: explanation,\n    matchingOutcome: 'MANUAL_REVIEW'\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2576,
+        32
+      ],
+      "id": "d76d125c-2abf-472b-8994-64253869bcf2",
+      "name": "Prepare Manual Review Result"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=\n{{\n  JSON.stringify({\n    model: \"openai/gpt-oss-20b\",\n    temperature: 0.1,\n    max_tokens: 2500,\n    response_format: {\n      type: \"json_object\"\n    },\n    messages: [\n      {\n        role: \"system\",\n        content: `You are an evidence-based candidate-job matching evaluator.\n\nEvaluate only the candidate information and job requirements supplied in the input.\n\nRULES:\n1. Use only information explicitly supported by the input.\n2. Never invent skills, qualifications, experience, or projects.\n3. Do not infer a qualification from a job title alone.\n4. Distinguish missing evidence from confirmed lack of a qualification.\n5. Ignore protected characteristics and personal identifiers.\n6. Do not make hiring decisions or recommend automatic rejection.\n7. Assess only job-related criteria.\n8. Return scores from 0 to 100 when sufficient evidence exists.\n9. Return null when a criterion cannot be assessed reliably.\n10. If no preferred skills are specified by the employer, set evidence_status to \"not_applicable\", score to null, and explain that the criterion is not applicable.\n\n11. PROJECTS ASSESSMENT:\n- Assess identifiable project evidence found within the candidate's Experience information.\n- Never assume that a candidate has completed a project unless the supplied information explicitly supports it.\n- If project evidence is available, assess its relevance to the job requirements and return evidence_status as \"assessed\", with a score from 0 to 100.\n- If no project evidence is available and the job description does not explicitly require relevant project evidence, return evidence_status as \"not_applicable\" and score as null.\n- If the job description explicitly requires relevant project evidence but the candidate information does not provide enough evidence, return evidence_status as \"insufficient_evidence\" and score as null.\n- Explain the available or missing evidence honestly in reasoning.\n- Do not penalize candidates merely because a separate Projects field is unavailable.\n- Do not mark overall_evidence_sufficiency as \"limited\" or \"insufficient\" solely because projects are not applicable.\n\n12. Keep explanations concise and evidence-based.\n13. Return valid JSON only. Do not include Markdown or text outside the JSON object.\n\nReturn this structure:\n\n{\n  \"required_skills\": {\n    \"score\": 0,\n    \"evidence_status\": \"assessed\",\n    \"matched_evidence\": [],\n    \"missing_or_unverified\": [],\n    \"reasoning\": \"\"\n  },\n  \"relevant_experience\": {\n    \"score\": 0,\n    \"evidence_status\": \"assessed\",\n    \"evidence\": [],\n    \"reasoning\": \"\"\n  },\n  \"education\": {\n    \"score\": 0,\n    \"evidence_status\": \"assessed\",\n    \"evidence\": [],\n    \"reasoning\": \"\"\n  },\n  \"preferred_skills\": {\n    \"score\": 0,\n    \"evidence_status\": \"assessed\",\n    \"matched_evidence\": [],\n    \"missing_or_unverified\": [],\n    \"reasoning\": \"\"\n  },\n  \"projects\": {\n    \"score\": 0,\n    \"evidence_status\": \"assessed\",\n    \"evidence\": [],\n    \"reasoning\": \"\"\n  },\n  \"overall_evidence_sufficiency\": \"sufficient\",\n  \"uncertainties\": [],\n  \"summary\": \"\"\n}\n\nFor evidence_status, use:\n- assessed: sufficient evidence to assess the criterion.\n- insufficient_evidence: evidence is not sufficient for a reliable assessment.\n- not_applicable: the criterion genuinely does not apply.\n\nWhen evidence_status is insufficient_evidence or not_applicable, score must be null.\n\nFor required skills, list skills without evidence under missing_or_unverified. Do not claim that the candidate definitely lacks those skills unless the input explicitly establishes that fact.\n\nFor overall_evidence_sufficiency, use sufficient, limited, or insufficient.\n\nThe scores are advisory evidence assessments, not hiring decisions.`\n      },\n      {\n        role: \"user\",\n        content:\n          \"Evaluate this candidate against this job using the supplied evidence:\\n\\n\" +\n          JSON.stringify($json.matchingInput)\n      }\n    ]\n  })\n}}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1520,
+        -128
+      ],
+      "id": "f9d93972-bfee-4cbb-9e6b-29c5051ce441",
+      "name": "AI — Evaluate Candidate Match",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "266TNESgtzp5OBgW",
+          "name": "Groq API Header Authentication"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst response = $json;\nconst prepared = $('Prepare Matching Input').item.json;\n\nconst applicationId = prepared.candidateApplicationId ?? '';\nconst errors = [];\n\nconst criteria = {\n  required_skills: ['matched_evidence', 'missing_or_unverified'],\n  relevant_experience: ['evidence'],\n  education: ['evidence'],\n  preferred_skills: ['matched_evidence', 'missing_or_unverified'],\n  projects: ['evidence']\n};\n\nfunction getAIContent(data) {\n  return (\n    data.choices?.[0]?.message?.content ??\n    data.body?.choices?.[0]?.message?.content ??\n    null\n  );\n}\n\nfunction validateCriterion(name, criterion, requiredArrays) {\n  if (\n    !criterion ||\n    typeof criterion !== 'object' ||\n    Array.isArray(criterion)\n  ) {\n    errors.push(`Missing or invalid criterion: ${name}`);\n    return;\n  }\n\n  const allowedStatuses = [\n    'assessed',\n    'insufficient_evidence',\n    'not_applicable'\n  ];\n\n  if (!allowedStatuses.includes(criterion.evidence_status)) {\n    errors.push(`Invalid evidence status: ${name}`);\n  }\n\n  if (criterion.evidence_status === 'assessed') {\n    if (\n      typeof criterion.score !== 'number' ||\n      !Number.isFinite(criterion.score) ||\n      criterion.score < 0 ||\n      criterion.score > 100\n    ) {\n      errors.push(`Invalid score for ${name}`);\n    }\n  } else if (criterion.score !== null) {\n    errors.push(\n      `Non-assessed criterion must have null score: ${name}`\n    );\n  }\n\n  if (\n    typeof criterion.reasoning !== 'string' ||\n    criterion.reasoning.trim() === ''\n  ) {\n    errors.push(`Missing reasoning for ${name}`);\n  }\n\n  for (const field of requiredArrays) {\n    if (\n      !Array.isArray(criterion[field]) ||\n      !criterion[field].every(item => typeof item === 'string')\n    ) {\n      errors.push(`Invalid or missing ${field} array in ${name}`);\n    }\n  }\n}\n\nlet evaluation = null;\n\ntry {\n  const content = getAIContent(response);\n\n  if (typeof content !== 'string' || content.trim() === '') {\n    throw new Error('AI response content is missing or not text.');\n  }\n\n  const cleaned = content\n    .trim()\n    .replace(/^```(?:json)?\\s*/i, '')\n    .replace(/\\s*```$/, '');\n\n  evaluation = JSON.parse(cleaned);\n\n  if (\n    !evaluation ||\n    typeof evaluation !== 'object' ||\n    Array.isArray(evaluation)\n  ) {\n    throw new Error('AI response must be a JSON object.');\n  }\n\n  for (const [name, arrays] of Object.entries(criteria)) {\n    validateCriterion(name, evaluation[name], arrays);\n  }\n\n  if (\n    !['sufficient', 'limited', 'insufficient']\n      .includes(evaluation.overall_evidence_sufficiency)\n  ) {\n    errors.push('Invalid overall evidence sufficiency.');\n  }\n\n  if (\n    !Array.isArray(evaluation.uncertainties) ||\n    !evaluation.uncertainties.every(\n      item => typeof item === 'string'\n    )\n  ) {\n    errors.push('Uncertainties must be an array of strings.');\n  }\n\n  if (\n    typeof evaluation.summary !== 'string' ||\n    evaluation.summary.trim() === ''\n  ) {\n    errors.push('AI summary is missing or invalid.');\n  }\n\n} catch (error) {\n  errors.push(`AI response parsing failed: ${error.message}`);\n}\n\nconst hasInsufficientEvidence =\n  evaluation !== null &&\n  (\n    evaluation.overall_evidence_sufficiency !== 'sufficient' ||\n    Object.keys(criteria).some(name =>\n      evaluation[name]?.evidence_status === 'insufficient_evidence'\n    )\n  );\n\nconst matchingReady =\n  errors.length === 0 &&\n  evaluation !== null &&\n  !hasInsufficientEvidence;\n\nreturn {\n  json: {\n    candidateApplicationId: applicationId,\n    matchingReady,\n    parserErrors: errors,\n    evidenceRequiresManualReview: Boolean(hasInsufficientEvidence),\n    evaluation,\n    matchingOutcome: matchingReady\n      ? 'AI_EVALUATION_VALID'\n      : 'MANUAL_REVIEW'\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        -128
+      ],
+      "id": "14228291-d3d0-4706-b7e5-f3525bf74be0",
+      "name": "Parse AI Matching Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "395743a6-56a7-45db-b7d3-5e7ea2dea531",
+              "leftValue": "={{ $json.matchingReady }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1936,
+        -128
+      ],
+      "id": "f774b954-cb71-4b46-b38b-24e1f9d29e3e",
+      "name": "Check AI Evaluation Validity"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst data = $json;\nconst evaluation = data.evaluation;\n\nconst weights = {\n  required_skills: 0.40,\n  relevant_experience: 0.20,\n  education: 0.15,\n  preferred_skills: 0.15,\n  projects: 0.10\n};\n\nconst criteria = Object.keys(weights);\nconst errors = [];\n\nif (!evaluation || typeof evaluation !== 'object') {\n  errors.push('AI evaluation data is missing.');\n}\n\nlet weightedTotal = 0;\nlet applicableWeightTotal = 0;\n\nconst breakdown = {};\n\nif (evaluation) {\n  for (const name of criteria) {\n    const criterion = evaluation[name];\n    const weight = weights[name];\n\n    if (!criterion || typeof criterion !== 'object') {\n      errors.push(`Missing criterion: ${name}`);\n      continue;\n    }\n\n    const status = criterion.evidence_status;\n    const score = criterion.score;\n\n    if (status === 'insufficient_evidence') {\n      errors.push(`Insufficient evidence for ${name}.`);\n      continue;\n    }\n\n    if (status === 'not_applicable') {\n      if (score !== null) {\n        errors.push(\n          `Not-applicable criterion has a score: ${name}`\n        );\n      }\n\n      breakdown[name] = {\n        weight,\n        score: null,\n        weightedContribution: null,\n        status\n      };\n\n      continue;\n    }\n\n    if (status !== 'assessed') {\n      errors.push(`Invalid evidence status: ${name}`);\n      continue;\n    }\n\n    if (\n      typeof score !== 'number' ||\n      !Number.isFinite(score) ||\n      score < 0 ||\n      score > 100\n    ) {\n      errors.push(`Invalid score for ${name}.`);\n      continue;\n    }\n\n    weightedTotal += score * weight;\n    applicableWeightTotal += weight;\n\n    breakdown[name] = {\n      weight,\n      score,\n      weightedContribution: score * weight,\n      status\n    };\n  }\n}\n\nif (applicableWeightTotal === 0) {\n  errors.push('No applicable criteria are available for scoring.');\n}\n\nconst matchingReady = errors.length === 0;\n\nconst finalScore = matchingReady\n  ? Number(\n      (weightedTotal / applicableWeightTotal).toFixed(2)\n    )\n  : null;\n\nreturn {\n  json: {\n    candidateApplicationId: data.candidateApplicationId,\n    matchingReady,\n    scoreErrors: errors,\n    aiMatchScore: finalScore,\n    scoreBreakdown: breakdown,\n    matchingOutcome: matchingReady\n      ? 'MATCH_SCORE_CALCULATED'\n      : 'MANUAL_REVIEW'\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2144,
+        -272
+      ],
+      "id": "11dcb56a-ac31-422b-bcde-679b3bfda6af",
+      "name": "Calculate Final Match Score"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "34b6b653-7418-4fa4-a126-e4f3c94d4806",
+              "leftValue": "={{ $json.matchingReady }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2352,
+        -272
+      ],
+      "id": "d96cf707-db13-4844-aeee-1355d858185b",
+      "name": "Check Final Score Validity"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst data = $json;\n\nconst evaluation =\n  $('Parse AI Matching Result').item.json.evaluation;\n\nconst criteria = [\n  ['required_skills', 'Required Skills'],\n  ['relevant_experience', 'Relevant Experience'],\n  ['education', 'Education'],\n  ['preferred_skills', 'Preferred Skills'],\n  ['projects', 'Projects']\n];\n\nconst weights = {\n  required_skills: 40,\n  relevant_experience: 20,\n  education: 15,\n  preferred_skills: 15,\n  projects: 10\n};\n\nconst lines = [\n  'AI CANDIDATE MATCH ASSESSMENT',\n  '',\n  `Final Match Score: ${data.aiMatchScore}/100`,\n  '',\n  'CRITERION BREAKDOWN'\n];\n\nfor (const [key, label] of criteria) {\n  const item = evaluation?.[key];\n  const breakdown = data.scoreBreakdown?.[key];\n\n  if (!item || !breakdown) {\n    lines.push(`${label}: Assessment information unavailable.`);\n    continue;\n  }\n\n  if (item.evidence_status === 'not_applicable') {\n    lines.push(\n      `${label} (${weights[key]}% weight): Not applicable.`\n    );\n    continue;\n  }\n\n  lines.push(\n    `${label} (${weights[key]}% weight): ${item.score}/100`\n  );\n\n  lines.push(\n    `Evidence assessment: ${item.reasoning || 'No explanation supplied.'}`\n  );\n}\n\nif (\n  Array.isArray(evaluation?.uncertainties) &&\n  evaluation.uncertainties.length > 0\n) {\n  lines.push(\n    '',\n    'UNCERTAINTIES',\n    ...evaluation.uncertainties.map(item => `- ${item}`)\n  );\n}\n\nif (evaluation?.summary) {\n  lines.push(\n    '',\n    'AI SUMMARY',\n    evaluation.summary\n  );\n}\n\nlines.push(\n  '',\n  'IMPORTANT',\n  'This score is an advisory assessment based only on the information provided.',\n  'It does not represent a hiring decision. HR must independently review the candidate and make all final decisions.'\n);\n\nreturn {\n  json: {\n    candidateApplicationId: data.candidateApplicationId,\n    aiMatchScore: data.aiMatchScore,\n    matchingExplanation: lines.join('\\n'),\n    matchingOutcome: 'MATCH_SCORE_CALCULATED'\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2576,
+        -288
+      ],
+      "id": "7f19893b-2130-4eca-93e0-5c1b2c0934c6",
+      "name": "Format Matching Explanation"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 729501576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=729501576"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Application ID": "={{ $json.candidateApplicationId }}",
+            "AI Match Score": "=={{ $json.aiMatchScore }}",
+            "Matching Explanation": "={{ $json.matchingExplanation }}"
+          },
+          "matchingColumns": [
+            "Application ID"
+          ],
+          "schema": [
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Candidate Name",
+              "displayName": "Candidate Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Job ID",
+              "displayName": "Job ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Resume Link",
+              "displayName": "Resume Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Applied Date",
+              "displayName": "Applied Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Parsed Skills",
+              "displayName": "Parsed Skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Education",
+              "displayName": "Education",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Experience",
+              "displayName": "Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "AI Match Score",
+              "displayName": "AI Match Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Matching Explanation",
+              "displayName": "Matching Explanation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Candidate Category",
+              "displayName": "Candidate Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Application Status",
+              "displayName": "Application Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "HR Decision",
+              "displayName": "HR Decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Consent Status",
+              "displayName": "Consent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2816,
+        -128
+      ],
+      "id": "fb344959-f5be-4bde-8bd8-f6c6b74497e4",
+      "name": "Update Application Record",
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f1c8c50e-f0c3-4fbb-b01b-df82e80d1aa8",
+              "leftValue": "={{ $json['Application ID'] }}",
+              "rightValue": "TEST-APP-WF04-001",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "4e523590-30b4-4f08-b0d9-fb71778675c9",
+              "leftValue": "={{ $json[\"Application ID\"] }}",
+              "rightValue": "TEST-APP-WF04-002",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        16
+      ],
+      "id": "ec6c2d64-00cb-4a56-9aef-64749795e56d",
+      "name": "Filter — Test Application"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Trigger — New Candidate Application": {
+      "main": [
+        [
+          {
+            "node": "Filter — Test Application",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candidate Application": {
+      "main": [
+        [
+          {
+            "node": "Get Job Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Job Requirements": {
+      "main": [
+        [
+          {
+            "node": "Validate Matching Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Matching Data": {
+      "main": [
+        [
+          {
+            "node": "Prepare Matching Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Matching Input": {
+      "main": [
+        [
+          {
+            "node": "Check AI Matching Eligibility",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check AI Matching Eligibility": {
+      "main": [
+        [
+          {
+            "node": "AI — Evaluate Candidate Match",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Manual Review Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI — Evaluate Candidate Match": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Matching Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Matching Result": {
+      "main": [
+        [
+          {
+            "node": "Check AI Evaluation Validity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check AI Evaluation Validity": {
+      "main": [
+        [
+          {
+            "node": "Calculate Final Match Score",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Manual Review Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Final Match Score": {
+      "main": [
+        [
+          {
+            "node": "Check Final Score Validity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Final Score Validity": {
+      "main": [
+        [
+          {
+            "node": "Format Matching Explanation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Manual Review Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Matching Explanation": {
+      "main": [
+        [
+          {
+            "node": "Update Application Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Manual Review Result": {
+      "main": [
+        [
+          {
+            "node": "Update Application Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter — Test Application": {
+      "main": [
+        [
+          {
+            "node": "Get Candidate Application",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "316166af-502a-443f-8675-c66e293bd865",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fb5d1139e51b375c89350ab12a3ea757cd7f2199ff54d5aac2ca542637ba2b0b"
+  },
+  "id": "DtjTtNFppY4Ug7bC",
+  "tags": []
+}

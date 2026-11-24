@@ -1,0 +1,693 @@
+{
+  "name": "WF-05 - Candidate Categorization",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 729501576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=729501576"
+        },
+        "event": "rowUpdate",
+        "options": {
+          "columnsToWatch": [
+            "AI Match Score",
+            "Matching Explanation"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "969b63fc-9560-4f80-9d65-a3f03a699c66",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "6TSjhPANzXQH0rit",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 729501576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=729501576"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Application ID",
+              "lookupValue": "={{ $json[\"Application ID\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "797e97cd-c4f3-452a-8f9d-e5254d9ea4db",
+      "name": "Get Candidate Application",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst data = $json;\n\nconst errors = [];\n\nconst applicationId = String(data[\"Application ID\"] ?? \"\").trim();\nconst rawScore = data[\"AI Match Score\"];\nconst explanation = String(data[\"Matching Explanation\"] ?? \"\").trim();\n\nconst scoreText = String(rawScore ?? \"\").trim();\nconst score = scoreText === \"\" ? NaN : Number(scoreText);\n\nif (!applicationId) {\n  errors.push(\"Missing Application ID.\");\n}\n\nif (scoreText === \"\") {\n  errors.push(\"AI Match Score is missing.\");\n} else if (!Number.isFinite(score)) {\n  errors.push(\"AI Match Score is not a valid number.\");\n} else if (score < 0 || score > 100) {\n  errors.push(\"AI Match Score must be between 0 and 100.\");\n}\n\nif (!explanation) {\n  errors.push(\"Matching Explanation is missing.\");\n}\n\nif (explanation.toUpperCase().includes(\"MANUAL REVIEW REQUIRED\")) {\n  errors.push(\"WF-04 marked this application for manual review.\");\n}\n\nconst categorizationReady = errors.length === 0;\n\nreturn {\n  json: {\n    ...data,\n    candidateApplicationId: applicationId,\n    aiMatchScore: categorizationReady ? score : null,\n    matchingExplanation: explanation,\n    categorizationReady,\n    categorizationErrors: errors\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "c9fd5e6f-60b7-463e-8c18-8d6f11649fc9",
+      "name": "Validate Categorization Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f86fef29-7b03-4936-ac3f-58937bea6add",
+              "leftValue": "={{ $json.categorizationReady }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "88e5ce60-554f-4e1f-94bf-bb035d275e24",
+      "name": "Check Categorization Eligibility"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst data = $json;\nconst score = Number(data.aiMatchScore);\n\nlet candidateCategory;\n\nif (score >= 80 && score <= 100) {\n  candidateCategory = \"Strong Match\";\n} else if (score >= 60 && score < 80) {\n  candidateCategory = \"Potential Match\";\n} else if (score >= 0 && score < 60) {\n  candidateCategory = \"HR Review\";\n} else {\n  candidateCategory = \"Manual Review\";\n}\n\nreturn {\n  json: {\n    ...data,\n    candidateCategory\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        -96
+      ],
+      "id": "86079319-a3b4-47c8-96fb-caf395d980fc",
+      "name": "Calculate Candidate Category"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst data = $json;\n\nconst errors = Array.isArray(data.categorizationErrors)\n  ? data.categorizationErrors\n  : [\"Application requires manual verification.\"];\n\nconst explanation = [\n  \"MANUAL REVIEW REQUIRED\",\n  \"Candidate categorization was not completed.\",\n  ...errors.map(error => \"- \" + error),\n  \"HR action: Verify the application, AI match score, and matching explanation before proceeding.\"\n].join(\"\\n\");\n\nreturn {\n  json: {\n    ...data,\n    candidateCategory: \"Manual Review\",\n    categorizationReviewExplanation: explanation\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        96
+      ],
+      "id": "f167ebb4-28fc-4fa4-82ea-afdbd43e986e",
+      "name": "Prepare Manual Review Category"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 729501576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=729501576"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Application ID": "={{ $json.candidateApplicationId }}",
+            "Candidate Category": "={{ $json.candidateCategory }}"
+          },
+          "matchingColumns": [
+            "Application ID"
+          ],
+          "schema": [
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Candidate Name",
+              "displayName": "Candidate Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Job ID",
+              "displayName": "Job ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Resume Link",
+              "displayName": "Resume Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Applied Date",
+              "displayName": "Applied Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Parsed Skills",
+              "displayName": "Parsed Skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Education",
+              "displayName": "Education",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Experience",
+              "displayName": "Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "AI Match Score",
+              "displayName": "AI Match Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Matching Explanation",
+              "displayName": "Matching Explanation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Candidate Category",
+              "displayName": "Candidate Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application Status",
+              "displayName": "Application Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "HR Decision",
+              "displayName": "HR Decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Consent Status",
+              "displayName": "Consent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1040,
+        -96
+      ],
+      "id": "1684f0c9-c322-4b2e-8d6a-309503b9ada8",
+      "name": "Update Candidate Category — Valid",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s",
+          "mode": "list",
+          "cachedResultName": "AI-HR-Recruitment-Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 729501576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zwyU98aaKAk7XevFyvCW7uXePUG7HQ9Omb2sh0yAg_s/edit#gid=729501576"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Application ID": "={{ $json.candidateApplicationId }}",
+            "Candidate Category": "={{ $json.candidateCategory }}"
+          },
+          "matchingColumns": [
+            "Application ID"
+          ],
+          "schema": [
+            {
+              "id": "Application ID",
+              "displayName": "Application ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Candidate Name",
+              "displayName": "Candidate Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Job ID",
+              "displayName": "Job ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Resume Link",
+              "displayName": "Resume Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Applied Date",
+              "displayName": "Applied Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Parsed Skills",
+              "displayName": "Parsed Skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Education",
+              "displayName": "Education",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Experience",
+              "displayName": "Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "AI Match Score",
+              "displayName": "AI Match Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Matching Explanation",
+              "displayName": "Matching Explanation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Candidate Category",
+              "displayName": "Candidate Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application Status",
+              "displayName": "Application Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "HR Decision",
+              "displayName": "HR Decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Consent Status",
+              "displayName": "Consent Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1040,
+        96
+      ],
+      "id": "4c46c9a8-d227-4017-89d8-4654957db4b4",
+      "name": "Update Candidate Category — Manual Review",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eoWzoBj4MRqd1X57",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Candidate Application",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candidate Application": {
+      "main": [
+        [
+          {
+            "node": "Validate Categorization Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Categorization Data": {
+      "main": [
+        [
+          {
+            "node": "Check Categorization Eligibility",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Categorization Eligibility": {
+      "main": [
+        [
+          {
+            "node": "Calculate Candidate Category",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Manual Review Category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Candidate Category": {
+      "main": [
+        [
+          {
+            "node": "Update Candidate Category — Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Manual Review Category": {
+      "main": [
+        [
+          {
+            "node": "Update Candidate Category — Manual Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "016ba117-5c32-4be1-a339-4ddd4d6c6955",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fb5d1139e51b375c89350ab12a3ea757cd7f2199ff54d5aac2ca542637ba2b0b"
+  },
+  "id": "1W660s802r6EOQmE",
+  "tags": []
+}
